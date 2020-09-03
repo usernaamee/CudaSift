@@ -1,3 +1,70 @@
+# CudaSift - SIFT features with CUDA -- Now with Python support!
+
+A fork of [Celebrandil/CudaSift](https://github.com/Celebrandil/CudaSift) to generate a python library.  
+To use, simply edit `generate_py_module.sh` and run the batch script.  
+To test, run the benchmark.py script.
+
+```
+# python3 benchmark.py
+
+SIFT extraction time =        1.06 ms 919
+Incl prefiltering & memcpy =  1.91 ms 919
+
+pycusift time: 0.133
+Total features detected: 919
+opencv time: 0.431
+Total features detected: 5303
+```
+
+When run with [memory_profiler](https://pypi.org/project/memory-profiler/), you should get the following output:
+```
+Filename: benchmark.py
+
+Line #    Mem usage    Increment   Line Contents
+================================================
+     8  102.852 MiB  102.852 MiB   @profile
+     9                             def cuda_func(orig_img):
+    10  110.605 MiB    7.754 MiB       img = orig_img.astype('float32'); 
+    11  110.605 MiB    0.000 MiB       start = time()
+    12  209.539 MiB   98.934 MiB       tmp = pycusift.sift_feature_extractor(img)
+    13  209.539 MiB    0.000 MiB       end = time()
+    14  209.539 MiB    0.000 MiB       print('pycusift time: {:.3f}'.format(end - start))
+    15  207.117 MiB    0.000 MiB       tmp = np.array(tmp).reshape((-1, 130))
+    16  207.117 MiB    0.000 MiB       print('Total features detected:', len(tmp))
+    17  207.117 MiB    0.000 MiB       kp = []
+    18  207.117 MiB    0.000 MiB       des = []
+    19  207.117 MiB    0.000 MiB       for entry in tmp:
+    20  207.117 MiB    0.000 MiB           kp_obj = cv2.KeyPoint(entry[0], entry[1], 0)
+    21  207.117 MiB    0.000 MiB           des_obj = entry[2:]
+    22  207.117 MiB    0.000 MiB           kp.append(kp_obj)
+    23  207.117 MiB    0.000 MiB           des.append(des_obj)
+    24  214.965 MiB    7.848 MiB       outimg = np.zeros_like(img)
+    25  223.328 MiB    8.363 MiB       outimg1 = cv2.drawKeypoints(orig_img, kp, outimg)
+    26  223.328 MiB    0.000 MiB       return outimg1
+
+
+Filename: benchmark.py
+
+Line #    Mem usage    Increment   Line Contents
+================================================
+    29  215.621 MiB  215.621 MiB   @profile
+    30                             def opencv_func(orig_img):
+    31  215.621 MiB    0.000 MiB       img = orig_img.copy()
+    32  215.621 MiB    0.000 MiB       sift = cv2.xfeatures2d.SIFT_create()
+    33  215.621 MiB    0.000 MiB       start = time()
+    34  328.742 MiB  113.121 MiB       kp, des = sift.detectAndCompute(img, None)
+    35  328.742 MiB    0.000 MiB       end = time()
+    36  328.742 MiB    0.000 MiB       print('opencv time: {:.3f}'.format(end - start))
+    37  328.742 MiB    0.000 MiB       print('Total features detected:', len(kp))
+    38  328.742 MiB    0.000 MiB       outimg = np.zeros_like(img)
+    39  328.742 MiB    0.000 MiB       outimg2 = cv2.drawKeypoints(orig_img, kp, outimg)
+    40  328.742 MiB    0.000 MiB       return outimg2
+
+```
+
+### *The original README follows:*
+
+
 # CudaSift - SIFT features with CUDA
 
 This is the fourth version of a SIFT (Scale Invariant Feature Transform) implementation using CUDA for GPUs from NVidia. The first version is from 2007 and GPUs have evolved since then. This version is slightly more precise and considerably faster than the previous versions and has been optimized for Kepler and later generations of GPUs.
